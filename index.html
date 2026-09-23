@@ -76,6 +76,8 @@
            align-items: center; justify-content: center; gap: 14px; }
   #pause .pill { max-width: 280px; background: var(--light); color: var(--dark); }
   #pause .ghost { background: none; color: #fff; border: 1.5px solid rgba(255,255,255,.35); }
+  #abort { font-size: 14px; color: rgba(255,255,255,.55); padding: 10px 8px; margin-top: 4px; }
+  #abort.armed { color: #fff; }
 
   /* done */
   #done { justify-content: center; }
@@ -145,6 +147,7 @@
     <button class="pill" id="resume">Resume</button>
     <button class="pill ghost" id="skip">Skip</button>
     <button class="pill ghost" id="end">End workout</button>
+    <button id="abort"></button>
   </div>
 </section>
 
@@ -532,6 +535,7 @@ function pause(on) {
   else { const d = now - run.pausedAt; run.began += d; if (run.end) run.end += d; }
   run.paused = on;
   listen(!on);
+  disarmAbort();
   $('#pause').hidden = !on;
 }
 
@@ -660,7 +664,22 @@ $('#run').onclick = () => pause(true);
 $('#pause').onclick = e => e.stopPropagation();
 $('#resume').onclick = () => pause(false);
 $('#skip').onclick = () => { pause(false); advance(true); };
-$('#end').onclick = () => { if (run.log.some(x => !x.skipped)) saveSession(); stop(); show('home'); renderHome(); };
+$('#end').onclick = () => {
+  // A stopwatch set is open-ended, so ending mid-set means "that's where I stopped": keep the time run so far.
+  const s = run.plan[run.i];
+  if (s.type === 'work' && s.ex.type === 'stopwatch') run.log.push({ ex: s.ex.id, s: Math.round((run.pausedAt - run.began) * SPEED / 1000) });
+  if (run.log.some(x => !x.skipped)) saveSession();
+  stop(); show('home'); renderHome();
+};
+// Abort quits without logging anything and leaves the queue where it was. It throws away real work
+// (a long stopwatch run, say), so like "Mark done" it takes a second tap.
+let abortArmed = null;
+function disarmAbort() { abortArmed = clearTimeout(abortArmed); $('#abort').textContent = 'Abort, don\u2019t log'; $('#abort').classList.remove('armed'); }
+$('#abort').onclick = () => {
+  if (abortArmed) { disarmAbort(); stop(); show('home'); renderHome(); return; }
+  $('#abort').textContent = 'Tap again to discard'; $('#abort').classList.add('armed');
+  abortArmed = setTimeout(disarmAbort, 4000);
+};
 $('#back').onclick = () => { show('home'); renderHome(); };
 $('#tSound').onclick = () => { settings.sound = !settings.sound; store.set('settings', settings); renderFooter(); };
 $('#tVoice').onclick = () => { settings.voice = !settings.voice; store.set('settings', settings); renderFooter(); };

@@ -1,5 +1,5 @@
 // Network-first: edits pushed to GitHub show up on next open; cached copy is used offline.
-const CACHE = 'zaryadka-v10';
+const CACHE = 'zaryadka-v11';
 const ASSETS = ['./', './index.html', './data/workouts.json', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 
 self.addEventListener('install', e => {
