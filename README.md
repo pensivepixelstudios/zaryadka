@@ -12,6 +12,12 @@ A minimalist 10-minute calisthenics coach. It's a single static page with no bui
 
 Edit workouts yourself or with an agent. See [AGENTS.md](AGENTS.md), then run `python3 check.py`.
 
+## Files
+- [`index.html`](index.html) — the whole app: markup, styles and the runner
+- [`workouts.json`](workouts.json) — the exercises and workouts; the only file you normally edit
+- [`check.py`](check.py) — validates `workouts.json` and prints each workout's estimated length
+- [`sw.js`](sw.js), [`manifest.webmanifest`](manifest.webmanifest), `icons/` — offline cache and home-screen install
+
 ## Run locally
 ```bash
 python3 -m http.server 8765
