@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Validate workouts.json and print a summary of each workout. Usage: python3 check.py"""
+"""Validate data/workouts.json and print a summary of each workout. Usage: python3 tools/check.py"""
 import json, pathlib, sys
 
-path = pathlib.Path(__file__).with_name("workouts.json")
+path = pathlib.Path(__file__).resolve().parent.parent / "data" / "workouts.json"
 try:
     c = json.loads(path.read_text())
 except json.JSONDecodeError as e:
-    sys.exit(f"✗ workouts.json is not valid JSON: {e}")
+    sys.exit(f"✗ data/workouts.json is not valid JSON: {e}")
 
 errs, ids = [], set()
 ex = c.get("exercises") or {}

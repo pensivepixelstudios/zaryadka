@@ -1,9 +1,9 @@
 # Zaryadka — instructions for agents
 
-Zaryadka is a static, dependency-free workout PWA (`index.html`). The **only file you normally edit is `workouts.json`**.
-After any edit, run `python3 check.py` — it validates the file and prints each workout with its estimated length.
+Zaryadka is a static, dependency-free workout PWA (`index.html`). The **only file you normally edit is `data/workouts.json`**.
+After any edit, run `python3 tools/check.py` — it validates the file and prints each workout with its estimated length.
 
-## workouts.json
+## data/workouts.json
 
 ```jsonc
 {
@@ -42,12 +42,12 @@ Override precedence (most specific wins): interval → exercise → workout → 
 
 ## Guidelines
 - The user wants exercises done **in blocks** (all sets of one exercise, then the next), not alternated.
-- Keep each workout at **≈10 minutes** (`check.py` shows the estimate). With 30s rest, 10 sets ≈ 10 min.
+- Keep each workout at **≈10 minutes** (`tools/check.py` shows the estimate). With 30s rest, 10 sets ≈ 10 min.
 - Exercise ids: lowercase `snake_case`. Don't rename or reuse existing workout ids — history refers to them.
 - Exercises show only their name — don't add form cues or descriptions.
 - Workouts form a queue in list order: finishing or skipping one moves to the next (tracked per device). Removing or reordering is fine.
 - The app name lives in `index.html` and `manifest.webmanifest`, not here.
-- Only `workouts.json` needs to change to add exercises or workouts. Commit and push; GitHub Pages redeploys in about a minute.
+- Only `data/workouts.json` needs to change to add exercises or workouts. Commit and push; GitHub Pages redeploys in about a minute.
 
 ## Workout log format (exported by the app, "Export log")
 ```json

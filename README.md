@@ -2,7 +2,7 @@
 
 A minimalist 10-minute calisthenics coach. It's a single static page with no build step and no dependencies.
 
-- Queues the workouts in [`workouts.json`](workouts.json) in order. Hit **Start**, or **Skip** to move to the next one
+- Queues the workouts in [`workouts.json`](data/workouts.json) in order. Hit **Start**, or **Skip** to move to the next one
 - **Rep sets** show a target and a big *Done* button. **Hold sets** and **rest** are timed, with a 3-2-1 beep countdown
 - Beeps, optional voice announcements ("Rest. Next, push-ups"), and it keeps the screen awake during a session
 - Turn on **Mic “done”** and say *done* to finish a rep set without touching the phone. It's the only command, and it only listens during a session
@@ -10,13 +10,14 @@ A minimalist 10-minute calisthenics coach. It's a single static page with no bui
 - Tap any day in the grid to log a workout you did away from the app, or to remove one logged by mistake
 - Works offline and installs to the home screen
 
-Edit workouts yourself or with an agent. See [AGENTS.md](AGENTS.md), then run `python3 check.py`.
+Edit workouts yourself or with an agent. See [AGENTS.md](AGENTS.md), then run `python3 tools/check.py`.
 
 ## Files
 - [`index.html`](index.html) — the whole app: markup, styles and the runner
-- [`workouts.json`](workouts.json) — the exercises and workouts; the only file you normally edit
-- [`check.py`](check.py) — validates `workouts.json` and prints each workout's estimated length
-- [`sw.js`](sw.js), [`manifest.webmanifest`](manifest.webmanifest), `icons/` — offline cache and home-screen install
+- [`workouts.json`](data/workouts.json) — the exercises and workouts; the only file you normally edit
+- [`tools/check.py`](tools/check.py) — validates `data/workouts.json` and prints each workout's estimated length
+- [`sw.js`](sw.js), [`manifest.webmanifest`](manifest.webmanifest), `icons/` — offline cache and home-screen install.
+  `sw.js` has to sit in the root: a service worker only controls pages at or below its own path
 
 ## Run locally
 ```bash
