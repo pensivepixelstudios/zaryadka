@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#efe8da">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Zaryadka</title>
+<style>
+  :root { --bg:#efe8da; --ink:#141414; --mute:#8b8375; --line:#ddd4c3; --work:#d42a1e; --dark:#141414; --light:#efe8da;
+          --display: "DIN Condensed", "Avenir Next Condensed", "Roboto Condensed", "sans-serif-condensed", "Arial Narrow", sans-serif; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111; --ink:#efe8da; --mute:#7d766b; --line:#262320; } }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); -webkit-tap-highlight-color: transparent;
+         font: 16px/1.4 -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  .tag { font-family: var(--display); font-size: 15px; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); }
+  .meta { color: var(--mute); margin: 0; }
+  .pill { width: 100%; height: 64px; border-radius: 999px; background: var(--work); color: var(--light); font: 700 26px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; }
+
+  /* home */
+  #home, #done { max-width: 440px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; gap: 32px;
+                 padding: calc(env(safe-area-inset-top) + 24px) 24px calc(env(safe-area-inset-bottom) + 24px); }
+  header { display: flex; justify-content: space-between; align-items: baseline; }
+  .brand { color: var(--work); font: 700 26px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; }
+  .go { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .acts { display: flex; gap: 22px; }
+  .acts button { font-size: 14px; color: var(--mute); padding: 8px 4px; }
+  h1 { font: 700 60px/.9 var(--display); letter-spacing: .01em; text-transform: uppercase; margin: 10px 0 10px; }
+  .sets { list-style: none; padding: 0; margin: 18px 0 0; font-size: 15px; }
+  .sets li { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .sets li:last-child { border-bottom: 0; }
+  .sets em { font-style: normal; color: var(--mute); }
+  .grid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 13px); grid-auto-columns: 13px; gap: 3px; margin-bottom: 12px; cursor: pointer; }
+  .grid i { border-radius: 2px; background: var(--line); }
+  .grid i.l1 { background: color-mix(in srgb, var(--work) 30%, var(--line)); }
+  .grid i.l2 { background: color-mix(in srgb, var(--work) 55%, var(--line)); }
+  .grid i.l3 { background: color-mix(in srgb, var(--work) 78%, var(--line)); }
+  .grid i.l4 { background: var(--work); }
+  .grid i.today { outline: 1.5px solid var(--ink); outline-offset: -1.5px; }
+  .grid i.fut { visibility: hidden; }
+  footer { margin-top: auto; display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--mute); }
+  footer button:hover, .acts button:hover { color: var(--ink); }
+  #err { white-space: pre-wrap; font-size: 13px; color: var(--work); margin: 0; }
+
+  /* run */
+  #run { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; user-select: none; -webkit-user-select: none;
+         padding: calc(env(safe-area-inset-top) + 20px) 24px calc(env(safe-area-inset-bottom) + 24px);
+         background: var(--dark); color: var(--light); transition: background .25s; }
+  #run[data-phase="work"] { background: var(--work); color: var(--light); }
+  #run .tag { color: inherit; opacity: .6; }
+  .top { display: flex; justify-content: space-between; align-items: center; font-variant-numeric: tabular-nums; }
+  #pauseBtn { font-size: 20px; opacity: .6; padding: 8px; margin: -8px; }
+  .mid { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 0; }
+  #exname { font: 700 clamp(48px, 14vw, 120px)/.9 var(--display); letter-spacing: .01em; text-transform: uppercase; margin-top: 10px; }
+  #sub { opacity: .6; margin-top: 8px; max-width: 32ch; min-height: 1.4em; }
+  #timer { font: 700 min(68vw, 48vh)/1 var(--display); font-variant-numeric: tabular-nums; margin-top: 4vh; }
+  #timer.clock { font-size: min(26vw, 30vh); }
+  #timer.pulse { animation: pulse .5s ease-out; }
+  @keyframes pulse { from { transform: scale(1.08); } to { transform: scale(1); } }
+  #unit { font-family: var(--display); font-size: 17px; letter-spacing: .12em; text-transform: uppercase; opacity: .6; min-height: 1.4em; font-variant-numeric: tabular-nums; }
+  .bot { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+  #next { opacity: .6; font-size: 14px; min-height: 1.4em; }
+  #doneBtn { max-width: 420px; background: var(--dark); color: var(--light); height: 84px; font-size: 32px; }
+  .bar { width: 100%; display: flex; gap: 4px; }
+  .bar i { flex: 1; height: 4px; border-radius: 2px; background: currentColor; opacity: .18; transition: opacity .3s; }
+  .bar i.cur { opacity: .45; }
+  .bar i.on { opacity: 1; }
+  #pause { position: fixed; inset: 0; background: rgba(17,17,17,.96); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #fff; display: flex; flex-direction: column;
+           align-items: center; justify-content: center; gap: 14px; }
+  #pause .pill { max-width: 280px; background: var(--light); color: var(--dark); }
+  #pause .ghost { background: none; color: #fff; border: 1.5px solid rgba(255,255,255,.35); }
+
+  /* done */
+  #done { justify-content: center; }
+  #done h1 { font-size: 72px; color: var(--work); }
+
+  /* day sheet */
+  #sheet { position: fixed; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; padding: 24px;
+           background: rgba(17,17,17,.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  #sheet .card { width: 100%; max-width: 360px; max-height: 84vh; overflow: auto; display: flex; flex-direction: column;
+                 background: var(--bg); color: var(--ink); border-radius: 20px; padding: 22px; }
+  #sheet .pill { height: 52px; font-size: 22px; margin-top: 14px; background: none; color: var(--ink); border: 1.5px solid var(--line); }
+  #sadd { margin-top: 16px; }
+  .rows { list-style: none; padding: 0; margin: 6px 0 0; font-size: 15px; }
+  .rows li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .rows li:last-child { border-bottom: 0; }
+  .rows .name { flex: 1; text-align: left; }
+  .rows em { font-style: normal; color: var(--mute); font-size: 13px; }
+  .rows .x { color: var(--mute); font-size: 13px; padding: 8px; margin: -8px -4px; }
+  .rows .x:hover { color: var(--work); }
+</style>
+</head>
+<body>
+
+<main id="home">
+  <header><span class="brand">Zaryadka</span></header>
+  <section>
+    <div class="tag">Up next</div>
+    <h1 id="wname">…</h1>
+    <p class="meta" id="meta"></p>
+    <ol class="sets" id="sets"></ol>
+    <pre id="err" hidden></pre>
+  </section>
+  <div class="go">
+    <button class="pill" id="start">Start</button>
+    <div class="acts"><button id="skipW"></button><button id="markW">Mark done</button></div>
+  </div>
+  <section>
+    <div class="grid" id="grid"></div>
+    <p class="meta" id="stats"></p>
+  </section>
+  <footer>
+    <button id="tSound"></button>
+    <button id="tVoice"></button>
+    <button id="tMic"></button>
+    <button id="exp">Export log</button>
+    <button id="imp">Import log</button>
+    <input type="file" id="file" accept="application/json,.json" hidden>
+  </footer>
+</main>
+
+<section id="run" hidden>
+  <div class="top"><span class="tag" id="count"></span><button id="pauseBtn" aria-label="Pause">❙❙</button></div>
+  <div class="mid">
+    <div class="tag" id="phase"></div>
+    <div id="exname"></div>
+    <div id="sub"></div>
+    <div id="timer"></div>
+    <div id="unit"></div>
+  </div>
+  <div class="bot">
+    <button class="pill" id="doneBtn" hidden>Done</button>
+    <div id="next"></div>
+    <div class="bar" id="prog"></div>
+  </div>
+  <div id="pause" hidden>
+    <div class="tag" style="color:#fff">Paused</div>
+    <button class="pill" id="resume">Resume</button>
+    <button class="pill ghost" id="skip">Skip</button>
+    <button class="pill ghost" id="end">End workout</button>
+  </div>
+</section>
+
+<main id="done" hidden>
+  <div class="tag">Done</div>
+  <h1 id="dname"></h1>
+  <p class="meta" id="dmeta"></p>
+  <button class="pill" id="back">Back</button>
+</main>
+
+<div id="sheet" hidden>
+  <div class="card">
+    <div class="tag" id="sday"></div>
+    <ul class="rows" id="sdone"></ul>
+    <div class="tag" id="sadd">Log a workout</div>
+    <ul class="rows" id="spick"></ul>
+    <button class="pill" id="sclose">Close</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const SPEED = Math.max(1, Number(new URLSearchParams(location.search).get('speed')) || 1); // ?speed=20 for testing
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('boris.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('boris.' + k, JSON.stringify(v)); } catch {} },
+};
+// One-time copy of data saved under the app's old name. Storage keys stay fixed even if "name" in workouts.json changes.
+try { for (const k of ['log', 'next', 'settings']) { const old = localStorage.getItem('ten.' + k); if (old != null && localStorage.getItem('boris.' + k) == null) localStorage.setItem('boris.' + k, old); } } catch {}
+const settings = Object.assign({ sound: true, voice: true, mic: false }, store.get('settings', {}));
+const pad = n => String(n).padStart(2, '0');
+const isoDay = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
+
+let cfg, pick = 0, run = null, sheetDay = null;
+
+/* ---------- config ---------- */
+// "reps": show a target, tap Done · "hold": count down · "stopwatch": count up until Done (a run, a climb).
+const TYPES = ['reps', 'hold', 'stopwatch'];
+const amount = x => x.type === 'reps' ? `${x.reps} reps` : x.type === 'stopwatch' ? 'open-ended' : `${x.work}s hold`;
+const clock = sec => { const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, s = sec % 60; return (h ? `${h}:${pad(m)}` : m) + ':' + pad(s); };
+// What a finished set records besides its time: the hold length, the rep target, or nothing for a stopwatch.
+const setAmount = x => x.type === 'hold' ? { hold: x.work } : x.type === 'reps' ? { reps: x.reps } : {};
+function validate(c) {
+  if (!c || typeof c !== 'object') return ['workouts.json must be an object'];
+  const e = [], ex = c.exercises || {}, ids = new Set();
+  if (!c.exercises || typeof c.exercises !== 'object') e.push('missing "exercises" object');
+  for (const [id, x] of Object.entries(ex)) {
+    if (!x || !x.name) e.push(`exercise "${id}": missing "name"`);
+    if (x && x.type && !TYPES.includes(x.type)) e.push(`exercise "${id}": type must be ${TYPES.map(t => `"${t}"`).join(', ')}`);
+  }
+  if (!Array.isArray(c.workouts) || !c.workouts.length) e.push('"workouts" must be a non-empty array');
+  (c.workouts || []).forEach((w, i) => {
+    const label = (w && w.id) || `#${i + 1}`;
+    if (!w || !w.id) e.push(`workout ${label}: missing "id"`);
+    else if (ids.has(w.id)) e.push(`workout ${label}: duplicate id`); else ids.add(w.id);
+    if (!w || !Array.isArray(w.intervals) || !w.intervals.length) e.push(`workout ${label}: "intervals" must be a non-empty array`);
+    else w.intervals.forEach(s => { const id = typeof s === 'string' ? s : s && s.ex; if (!ex[id]) e.push(`workout ${label}: unknown exercise "${id}"`); });
+  });
+  return e;
+}
+
+function expand(w) {
+  // { "ex": "pushups", "sets": 5 } is a block of 5 consecutive sets.
+  const flat = w.intervals.flatMap(raw => { const s = typeof raw === 'string' ? { ex: raw } : raw; return Array(s.sets || 1).fill(s); });
+  const n = w.sets || flat.length, out = [];
+  for (let i = 0; i < n; i++) {
+    const s = flat[i % flat.length], x = cfg.exercises[s.ex];
+    const type = x.type || 'hold';
+    out.push({
+      id: s.ex, name: x.name, type,
+      reps: s.reps ?? x.reps ?? 10,
+      work: s.work ?? x.work ?? w.work ?? cfg.work ?? 30,
+      rest: s.rest ?? x.rest ?? w.rest ?? cfg.rest ?? 30,
+    });
+  }
+  return out;
+}
+
+function buildPlan(w) {
+  const sets = expand(w), prep = w.prep ?? cfg.prep ?? 10, p = [];
+  if (prep > 0 && sets[0].type !== 'stopwatch') p.push({ type: 'prep', dur: prep, ex: sets[0], n: 1, of: sets.length });
+  sets.forEach((s, i) => {
+    p.push({ type: 'work', dur: s.type === 'hold' ? s.work : null, ex: s, n: i + 1, of: sets.length });
+    if (i < sets.length - 1 && s.rest > 0) p.push({ type: 'rest', dur: s.rest, ex: sets[i + 1], n: i + 2, of: sets.length });
+  });
+  return p;
+}
+
+// Estimated seconds; rep sets are counted as their "work" time.
+const estimate = w => buildPlan(w).reduce((t, s) => t + (s.dur ?? s.ex.work), 0);
+
+// The queue is just "which workout is next", stored by id. Finishing or skipping moves it along.
+function queued() {
+  const i = cfg.workouts.findIndex(w => w.id === store.get('next'));
+  return i < 0 ? 0 : i;
+}
+function advanceQueue(from) {
+  pick = (from + 1) % cfg.workouts.length;
+  store.set('next', cfg.workouts[pick].id);
+}
+
+async function load() {
+  try {
+    const r = await fetch('workouts.json', { cache: 'no-cache' });
+    if (!r.ok) throw new Error(`Could not load workouts.json (${r.status})`);
+    let c;
+    try { c = await r.json(); } catch (e) { throw new Error('workouts.json is not valid JSON: ' + e.message); }
+    const errs = validate(c);
+    if (errs.length) throw new Error(errs.join('\n'));
+    cfg = c;
+  } catch (e) {
+    $('#err').textContent = e.message; $('#err').hidden = false; $('#start').hidden = true; $('#wname').textContent = 'Config error';
+    renderHistory(); renderFooter();
+    return;
+  }
+  pick = queued();
+  renderHome();
+}
+
+/* ---------- home ---------- */
+function renderHome() {
+  const w = cfg.workouts[pick], sets = expand(w), n = cfg.workouts.length;
+  $('#markW').textContent = 'Mark done';
+  armed = clearTimeout(armed);
+  $('#skipW').hidden = n < 2;
+  $('#skipW').textContent = `Skip to ${cfg.workouts[(pick + 1) % n].name} →`;
+  $('#wname').textContent = w.name;
+  const rests = new Set(sets.map(s => s.rest));
+  const open = sets.some(s => s.type === 'stopwatch'); // no honest estimate for these
+  $('#meta').textContent = `${sets.length} set${sets.length > 1 ? 's' : ''}` + (rests.size === 1 && sets.length > 1 ? ` · ${sets[0].rest}s rest` : '') + (open ? '' : ` · ≈ ${Math.round(estimate(w) / 60)} min`);
+  const blocks = []; // consecutive sets of the same exercise collapse into one row
+  sets.forEach(s => {
+    const a = amount(s), last = blocks[blocks.length - 1];
+    if (last && last.name === s.name && last.amount === a) last.n++;
+    else blocks.push({ name: s.name, amount: a, n: 1 });
+  });
+  $('#sets').replaceChildren(...blocks.map(bl => {
+    const li = el('li', bl.name);
+    li.append(el('em', `${bl.n} × ${bl.amount}`));
+    return li;
+  }));
+  renderHistory(); renderFooter();
+}
+
+function streak(days) {
+  const d = new Date(); let n = 0;
+  if (!days.has(isoDay(d))) d.setDate(d.getDate() - 1);
+  while (days.has(isoDay(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+
+function renderHistory() {
+  const log = counted(store.get('log', [])), weeks = 17;
+  const per = new Map(); // day -> workouts started that day, finished or not; each is one point
+  log.forEach(e => per.set(e.d, (per.get(e.d) || 0) + 1));
+  const level = n => Math.min(n, 4);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = new Date(today); start.setDate(today.getDate() - (today.getDay() + 6) % 7 - (weeks - 1) * 7);
+  const cells = [];
+  for (let i = 0; i < weeks * 7; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const k = isoDay(d), c = el('i');
+    c.dataset.d = k;
+    c.title = per.has(k) ? `${k} · ${per.get(k)} workout${per.get(k) > 1 ? 's' : ''}` : k;
+    c.className = [per.has(k) && 'l' + level(per.get(k)), +d === +today && 'today', d > today && 'fut'].filter(Boolean).join(' ');
+    cells.push(c);
+  }
+  $('#grid').replaceChildren(...cells);
+  const monday = new Date(today); monday.setDate(today.getDate() - (today.getDay() + 6) % 7);
+  const week = log.filter(e => e.d >= isoDay(monday)).length, s = streak(new Set(per.keys()));
+  $('#stats').textContent = log.length
+    ? `${log.length} session${log.length > 1 ? 's' : ''} · ${week} this week` + (s > 1 ? ` · ${s}-day streak` : '')
+    : 'No sessions yet';
+}
+
+function renderFooter() {
+  $('#tSound').textContent = `Sound ${settings.sound ? 'on' : 'off'}`;
+  $('#tVoice').textContent = `Voice ${settings.voice ? 'on' : 'off'}`;
+  $('#tMic').hidden = !SR;
+  $('#tMic').textContent = `Mic “done” ${settings.mic ? 'on' : 'off'}`;
+}
+
+/* ---------- sound ---------- */
+let ac;
+function audio() {
+  if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (C) ac = new C(); }
+  if (ac && ac.state === 'suspended') ac.resume();
+  return ac;
+}
+function tone(freq, dur = .12, when = 0, vol = .35) {
+  if (!settings.sound) return;
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + when, o = a.createOscillator(), g = a.createGain();
+  o.type = 'triangle'; o.frequency.value = freq;
+  g.gain.setValueAtTime(.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + .01);
+  g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + .05);
+}
+const sfx = {
+  tick: () => tone(660, .12),
+  work: () => tone(990, .6, 0, .45),
+  rest: () => { tone(660, .18); tone(440, .4, .2); },
+  done: () => { tone(523, .18); tone(659, .18, .18); tone(784, .7, .36); },
+};
+function say(text, delay = 0) {
+  if (!settings.voice || !('speechSynthesis' in window)) return;
+  setTimeout(() => {
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text); u.rate = 1.05;
+      u.onend = u.onerror = () => kick();  // speaking can end the recognition session
+      speechSynthesis.speak(u);
+    } catch {}
+  }, delay);
+}
+
+/* ---------- “done” by voice ---------- */
+// The only command. It listens during a session and taps the Done button for you.
+// A recognition session is disposable: browsers end it after a silence, after every utterance, when a
+// spoken announcement or a beep takes the audio, or for no reason at all — Chrome on Android does all
+// of these. So nothing relies on one lasting: a new session starts the instant the old one ends, and a
+// watchdog covers the cases where no "end" ever arrives. The gap between sessions is deaf time, so it
+// is kept as short as the browser allows, backing off only when a session dies on startup.
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+// "Done" counts anywhere in the phrase ("ok done", "I'm done"). Its usual mishearings only count as the
+// whole utterance, so counting reps out loud — "up, down, up, down" — doesn't end the set.
+const DONE = /\bdone\b/i, LIKE_DONE = /^\W*(dun|don|dawn|down|doan|dune)\W*$/i;
+const isDone = t => DONE.test(t) || LIKE_DONE.test(t);
+let rec = null, recOn = false, recLive = false, heardAt = -Infinity;
+let kickT = null, watch = null, liveSince = 0, fails = 0, cut = false;
+
+function recognizer() {
+  if (rec || !SR) return rec;
+  rec = new SR();
+  rec.continuous = true; rec.interimResults = true; rec.lang = 'en-US';
+  rec.maxAlternatives = 4;  // "done" is short, so it often lands below the top guess
+  rec.onstart = () => { recLive = true; liveSince = performance.now(); };
+  rec.onend = () => {
+    // A session that dies as soon as it starts means something is wrong; anything else is normal churn.
+    fails = cut || performance.now() - liveSince > 400 ? 0 : Math.min(fails + 1, 5);
+    cut = false; recLive = false; kick();
+  };
+  rec.onresult = e => {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const alts = e.results[i];
+      for (let k = 0; k < alts.length; k++) if (isDone(alts[k].transcript)) { fails = 0; return heardDone(); }
+    }
+  };
+  rec.onerror = e => {
+    recLive = false;
+    if (['not-allowed', 'service-not-allowed'].includes(e.error)) micOff();  // no permission; everything else is churn
+  };
+  return rec;
+}
+
+function heardDone() {
+  const s = run && run.plan[run.i], now = performance.now();
+  if (!s || run.paused || s.type !== 'work' || s.dur || now - heardAt < 1500) return;
+  heardAt = now;
+  cut = true;
+  try { rec.abort(); } catch {}  // clears the transcript so the same "done" can't fire twice
+  advance();
+}
+
+function kick() {  // make sure a session is running
+  if (!recOn || recLive || kickT) return;
+  kickT = setTimeout(() => {
+    kickT = null;
+    if (!recOn || recLive) return;
+    try { rec.start(); } catch {}
+  }, fails * 400);
+}
+
+function listen(on) {
+  recOn = !!(on && settings.mic && SR);
+  const r = recognizer(); if (!r) return;
+  clearInterval(watch); watch = null;
+  clearTimeout(kickT); kickT = null;
+  if (recOn) { fails = 0; watch = setInterval(kick, 600); kick(); }
+  else { recLive = false; cut = true; try { r.abort(); } catch {} }
+}
+
+function micOff() {
+  recOn = recLive = false; clearInterval(watch); watch = null; clearTimeout(kickT); kickT = null;
+  settings.mic = false; store.set('settings', settings);
+  renderFooter(); $('#tMic').textContent = 'Mic blocked'; setTimeout(renderFooter, 2500);
+}
+
+// Ask for the microphone at the tap, rather than in the middle of a workout.
+function askMic() {
+  const r = recognizer(); if (!r) return;
+  recOn = false;
+  try { r.start(); } catch { return; }
+  setTimeout(() => { if (!recOn) { cut = true; try { r.abort(); } catch {} } }, 1200);
+}
+
+let lock = null;
+async function wake(on) {
+  try {
+    if (on && 'wakeLock' in navigator) lock = await navigator.wakeLock.request('screen');
+    else if (!on && lock) { await lock.release(); lock = null; }
+  } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && run) { wake(true); kick(); } });
+
+/* ---------- runner ---------- */
+function show(id) {
+  for (const s of ['home', 'run', 'done']) $('#' + s).hidden = s !== id;
+  if (id !== 'run') setThemeColor(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim());
+}
+const setThemeColor = c => document.querySelector('meta[name=theme-color]').setAttribute('content', c);
+
+function start() {
+  audio(); // unlock audio inside the click
+  const w = cfg.workouts[pick];
+  run = { w, plan: buildPlan(w), i: -1, paused: false, log: [], end: null };
+  $('#prog').replaceChildren(...run.plan.filter(p => p.type === 'work').map(() => el('i')));
+  show('run'); wake(true); listen(true);
+  advance();
+  run.timer = setInterval(tick, 100);
+}
+
+function advance(skipped = false) {
+  const prev = run.plan[run.i];
+  if (prev && prev.type === 'work') run.log.push({ ex: prev.ex.id, ...setAmount(prev.ex), s: Math.round((performance.now() - run.began) * SPEED / 1000), ...(skipped && { skipped: true }) });
+  run.i++;
+  if (run.i >= run.plan.length) return finish();
+  const s = run.plan[run.i], now = performance.now();
+  // Chain from the previous phase end to avoid drift — only if it actually ran out (not skipped early) and we weren't suspended.
+  const base = run.end && run.end <= now && now - run.end < 1000 ? run.end : now;
+  run.began = base;
+  run.end = s.dur ? base + s.dur * 1000 / SPEED : null;
+  run.lastSec = null;
+  if (s.type === 'prep') say(`Get ready. ${s.ex.name}.`);
+  if (s.type === 'work') { sfx.work(); if (s.ex.type === 'reps') say(`${s.ex.reps} ${s.ex.name}`, 500); }
+  if (s.type === 'rest') { sfx.rest(); say(`Rest. Next, ${s.ex.name}`, 700); }
+  paint(s);
+  tick();
+}
+
+function paint(s) {
+  const r = $('#run'), reps = s.type === 'work' && !s.dur, sw = reps && s.ex.type === 'stopwatch';
+  r.dataset.phase = s.type;
+  setThemeColor(s.type === 'work' ? '#d42a1e' : '#141414');
+  $('#phase').textContent = { prep: 'Get ready', work: sw ? '' : reps ? 'Reps' : 'Hold', rest: '' }[s.type];
+  $('#exname').textContent = s.type === 'rest' ? 'Rest' : s.ex.name;
+  $('#sub').textContent = s.type === 'rest' ? `Next: ${s.ex.name} · ${amount(s.ex)}` : '';
+  $('#doneBtn').hidden = !reps;
+  $('#timer').classList.toggle('clock', sw);
+  // One segment per set: filled once completed, dimmer for the set in progress.
+  const completed = run.plan.slice(0, run.i).filter(p => p.type === 'work').length;
+  [...$('#prog').children].forEach((seg, k) => seg.className = k < completed ? 'on' : k === completed && s.type === 'work' ? 'cur' : '');
+  $('#count').textContent = `${completed + (s.type === 'work' ? 1 : 0)} / ${s.of}`; // matches the lit segments
+  if (reps && !sw) { $('#timer').textContent = s.ex.reps; $('#unit').textContent = ''; }
+  if (sw) $('#unit').textContent = '';
+  $('#next').textContent = s.type === 'prep' ? amount(s.ex) : reps && recOn ? '… or say “done”' : '';
+}
+
+function tick() {
+  if (!run || run.paused) return;
+  const s = run.plan[run.i], now = performance.now();
+  if (s.type === 'work' && s.ex.type === 'stopwatch') {
+    const sec = Math.floor((now - run.began) * SPEED / 1000);
+    if (sec !== run.lastSec) { run.lastSec = sec; $('#timer').textContent = clock(sec); }
+  } else if (s.dur) {
+    const ms = run.end - now;
+    if (ms <= 0) return advance();
+    const sec = Math.ceil(ms * SPEED / 1000);
+    if (sec !== run.lastSec) {
+      run.lastSec = sec;
+      $('#timer').textContent = sec;
+      $('#unit').textContent = 'sec';
+      if (sec <= 3) { sfx.tick(); const t = $('#timer'); t.classList.remove('pulse'); void t.offsetWidth; t.classList.add('pulse'); }
+    }
+  }
+}
+
+function pause(on) {
+  if (!run || run.paused === on) return;
+  const now = performance.now();
+  if (on) { run.pausedAt = now; try { speechSynthesis.cancel(); } catch {} }
+  else { const d = now - run.pausedAt; run.began += d; if (run.end) run.end += d; }
+  run.paused = on;
+  listen(!on);
+  $('#pause').hidden = !on;
+}
+
+function stop() { clearInterval(run.timer); run = null; wake(false); listen(false); $('#pause').hidden = true; try { speechSynthesis.cancel(); } catch {} }
+
+// Saves a session on the day of "when". Skipped sets are marked; sets never reached (ended early) aren't listed.
+function logSession(w, of, sets, extra, when = new Date()) {
+  const log = store.get('log', []), used = new Set(log.map(x => x.t));
+  const t = new Date(when);
+  while (used.has(t.toISOString())) t.setSeconds(t.getSeconds() + 1); // import de-dupes on "t", so keep it unique
+  const e = { d: isoDay(t), t: t.toISOString(), w: w.id, n: w.name, of, sets, ...extra };
+  log.push(e);
+  log.sort((a, b) => a.t < b.t ? -1 : 1);
+  store.set('log', log);
+  return e;
+}
+const saveSession = () => logSession(run.w, run.plan.filter(p => p.type === 'work').length, run.log);
+
+// A workout logged without running it: every set counts, timed at 0.
+const manualSets = w => buildPlan(w).filter(p => p.type === 'work').map(p => ({ ex: p.ex.id, ...setAmount(p.ex), s: 0 }));
+function markDone() {
+  const w = cfg.workouts[pick], sets = manualSets(w);
+  logSession(w, sets.length, sets, { manual: true });
+  advanceQueue(pick);
+  renderHome();
+}
+const doneSets = e => e.sets.filter(x => !x.skipped).length;
+// Share of the workout actually done. Entries without "of" predate this and were only saved when complete.
+const ratio = e => e.of ? doneSets(e) / e.of : 1;
+const counted = log => log.filter(e => ratio(e) > 0);
+
+function finish() {
+  const w = run.w, e = saveSession(), log = store.get('log', []);
+  stop();
+  sfx.done(); say('Done.', 300);
+  advanceQueue(cfg.workouts.indexOf(w));
+  const s = streak(new Set(counted(log).map(x => x.d)));
+  $('#dname').textContent = w.name;
+  const n = doneSets(e), open = e.sets.filter(x => !x.skipped && cfg.exercises[x.ex]?.type === 'stopwatch');
+  const took = open.length ? clock(open.reduce((t, x) => t + x.s, 0)) + ' · ' : '';
+  $('#dmeta').textContent = n === 0 ? `All ${e.of} sets skipped · not counted`
+    : took + (n < e.of ? `${n} of ${e.of} sets` : `${e.of} set${e.of > 1 ? 's' : ''}`) + ` · session ${counted(log).length}` + (s > 1 ? ` · ${s}-day streak` : '');
+  show('done');
+}
+
+/* ---------- day sheet ---------- */
+// Tap a square in the grid to log a workout on that day, or to drop one logged by mistake.
+const noon = day => new Date(day + 'T12:00:00'); // midday keeps the entry on that day whatever the timezone does
+const entryMeta = e => e.manual ? 'logged' : !e.of ? 'session'
+  : doneSets(e) < e.of ? `${doneSets(e)} of ${e.of} sets` : `${e.of} set${e.of > 1 ? 's' : ''}`;
+let armX = null;
+
+function openSheet(day) { sheetDay = day; armX = null; renderSheet(); $('#sheet').hidden = false; }
+function closeSheet() { sheetDay = armX = null; $('#sheet').hidden = true; }
+
+function renderSheet() {
+  const day = sheetDay;
+  $('#sday').textContent = noon(day).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+    + (day === isoDay() ? ' \u00b7 today' : '');
+  $('#sdone').replaceChildren(...store.get('log', []).filter(e => e.d === day).map(e => {
+    const li = el('li'), x = el('button', armX === e.t ? 'Remove?' : '\u2715', 'x');
+    x.onclick = () => { if (armX !== e.t) { armX = e.t; renderSheet(); return; } removeEntry(e.t); };
+    li.append(el('span', e.n || e.w, 'name'), el('em', entryMeta(e)), x);
+    return li;
+  }));
+  const ws = cfg ? cfg.workouts : [];
+  $('#sadd').hidden = !ws.length;
+  $('#spick').replaceChildren(...ws.map(w => {
+    const li = el('li'), b = el('button', w.name, 'name'), sets = manualSets(w);
+    b.onclick = () => { logSession(w, sets.length, sets, { manual: true }, noon(day)); closeSheet(); renderHistory(); };
+    li.append(b, el('em', `${sets.length} set${sets.length > 1 ? 's' : ''}`));
+    return li;
+  }));
+}
+
+function removeEntry(t) {
+  store.set('log', store.get('log', []).filter(e => e.t !== t));
+  armX = null; renderSheet(); renderHistory();
+}
+
+// The squares are small, so take the nearest one rather than only a direct hit.
+function nearestCell(ev) {
+  let best = null, bd = Infinity;
+  for (const c of $('#grid').children) {
+    if (c.classList.contains('fut')) continue;
+    const r = c.getBoundingClientRect();
+    const d = Math.hypot(Math.max(r.left - ev.clientX, 0, ev.clientX - r.right), Math.max(r.top - ev.clientY, 0, ev.clientY - r.bottom));
+    if (d < bd) { bd = d; best = c; }
+  }
+  return bd <= 8 ? best : null;
+}
+
+/* ---------- log import/export ---------- */
+function exportLog() {
+  const blob = new Blob([JSON.stringify({ app: 'zaryadka', exported: new Date().toISOString(), log: store.get('log', []) }, null, 2)], { type: 'application/json' });
+  const a = el('a'); a.href = URL.createObjectURL(blob); a.download = `zaryadka-log-${isoDay()}.json`;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+async function importLog(file) {
+  try {
+    const data = JSON.parse(await file.text()), incoming = Array.isArray(data) ? data : data.log;
+    if (!Array.isArray(incoming)) throw new Error('no "log" array');
+    const byT = new Map(store.get('log', []).map(e => [e.t, e]));
+    incoming.forEach(e => e && e.t && e.d && byT.set(e.t, e));
+    const merged = [...byT.values()].sort((a, b) => a.t < b.t ? -1 : 1);
+    store.set('log', merged);
+    alert(`Imported. ${merged.length} sessions total.`);
+  } catch (e) { alert('Could not import: ' + e.message); }
+  cfg ? renderHome() : renderHistory();
+}
+
+/* ---------- events ---------- */
+const skipWorkout = () => { if (!cfg) return; advanceQueue(pick); renderHome(); };
+let armed = null;
+$('#markW').onclick = () => {
+  if (!cfg) return;
+  if (armed) { armed = clearTimeout(armed); markDone(); return; }
+  $('#markW').textContent = 'Tap again to confirm';
+  armed = setTimeout(() => { armed = null; renderHome(); }, 4000);
+};
+$('#skipW').onclick = skipWorkout;
+$('#start').onclick = start;
+$('#doneBtn').onclick = e => { e.stopPropagation(); if (run && !run.paused) advance(); };
+$('#pauseBtn').onclick = e => { e.stopPropagation(); pause(true); };
+$('#run').onclick = () => pause(true);
+$('#pause').onclick = e => e.stopPropagation();
+$('#resume').onclick = () => pause(false);
+$('#skip').onclick = () => { pause(false); advance(true); };
+$('#end').onclick = () => { if (run.log.some(x => !x.skipped)) saveSession(); stop(); show('home'); renderHome(); };
+$('#back').onclick = () => { show('home'); renderHome(); };
+$('#tSound').onclick = () => { settings.sound = !settings.sound; store.set('settings', settings); renderFooter(); };
+$('#tVoice').onclick = () => { settings.voice = !settings.voice; store.set('settings', settings); renderFooter(); };
+$('#tMic').onclick = () => {
+  settings.mic = !settings.mic; store.set('settings', settings); renderFooter();
+  if (!settings.mic) listen(false); else if (run) listen(true); else askMic();
+};
+$('#grid').onclick = e => { const c = nearestCell(e); if (c) openSheet(c.dataset.d); };
+$('#sheet').onclick = e => { if (e.target === $('#sheet')) closeSheet(); };
+$('#sclose').onclick = closeSheet;
+$('#exp').onclick = exportLog;
+$('#imp').onclick = () => $('#file').click();
+$('#file').onchange = e => { if (e.target.files[0]) importLog(e.target.files[0]); e.target.value = ''; };
+document.addEventListener('keydown', e => {
+  if (!$('#sheet').hidden) { if (e.key === 'Escape') closeSheet(); return; }
+  if (run) {
+    const s = run.plan[run.i], reps = s && s.type === 'work' && !s.dur;
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (run.paused) pause(false); else if (reps) advance(); else pause(true); }
+    else if (e.key === 'Escape') pause(!run.paused);
+    else if (e.key === 'ArrowRight' && !run.paused) advance(true);
+  } else if (!$('#home').hidden && cfg) {
+    if (e.key === 'ArrowRight') skipWorkout();
+    if (e.key === 'Enter') start();
+  }
+});
+
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js');
+  // When a newer version takes over, reload once so the running app isn't left on the old code.
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!reloading && navigator.serviceWorker.controller) { reloading = true; location.reload(); }
+  });
+}
+load();
+</script>
+</body>
+</html>

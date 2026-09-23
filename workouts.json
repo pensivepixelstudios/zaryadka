@@ -1,0 +1,28 @@
+{
+  "work": 30,
+  "rest": 30,
+  "prep": 10,
+
+  "exercises": {
+    "pushups":       { "name": "Push-Ups",      "type": "reps", "reps": 10 },
+    "pike_pushups":  { "name": "Pike Push-Ups", "type": "reps", "reps": 10 },
+    "squats":        { "name": "Squats",        "type": "reps", "reps": 15 },
+    "hollow_man":    { "name": "Hollow Man",    "type": "hold", "work": 30 },
+    "shoulder_taps": { "name": "Shoulder Taps", "type": "hold", "work": 30 },
+    "pull_ups":      { "name": "Pull-Ups",      "type": "reps", "reps": 5 },
+    "bar_dips":      { "name": "Bar Dips",      "type": "reps", "reps": 5 },
+    "shrimp_squats": { "name": "Shrimp Squats", "type": "reps", "reps": 10 },
+    "climb":         { "name": "Climb",         "type": "stopwatch" },
+    "run":           { "name": "Run",           "type": "stopwatch" },
+    "tibs":          { "name": "Tibs",          "type": "reps", "reps": 15 }
+  },
+
+  "workouts": [
+    { "id": "push_legs", "name": "Push",            "intervals": [{ "ex": "pushups", "sets": 5 },    { "ex": "pike_pushups", "sets": 5 }] },
+    { "id": "core",      "name": "Core",            "intervals": [{ "ex": "hollow_man", "sets": 5 }, { "ex": "shoulder_taps", "sets": 5 }] },
+    { "id": "pull_dip",  "name": "Pull & Dip",      "intervals": [{ "ex": "pull_ups", "sets": 5 },   { "ex": "bar_dips", "sets": 5 }] },
+    { "id": "legs",      "name": "Legs",            "intervals": [{ "ex": "squats", "sets": 5 },     { "ex": "shrimp_squats", "sets": 5 }, { "ex": "tibs", "sets": 3, "rest": 30 }] },
+    { "id": "climb",      "name": "Climb",          "intervals": [{ "ex": "climb", "sets": 1 }] },
+    { "id": "run",        "name": "Run",            "intervals": [{ "ex": "run", "sets": 1 }] }
+  ]
+}
