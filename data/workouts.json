@@ -15,12 +15,13 @@
     "climb":         { "name": "Climb",         "type": "stopwatch" },
     "run":           { "name": "Run",           "type": "stopwatch" },
     "tibs":          { "name": "Tibs",          "type": "reps", "reps": 15 },
-    "superman":      { "name": "Superman",      "type": "reps", "reps": 10 }
+    "superman":      { "name": "Superman",      "type": "reps", "reps": 10 },
+    "l_sit":         { "name": "L-Sit",         "type": "hold", "work": 10, "rest": 30 }
   },
 
   "workouts": [
     { "id": "push_legs", "name": "Push",            "intervals": [{ "ex": "pushups", "sets": 5 },    { "ex": "pike_pushups", "sets": 5 }] },
-    { "id": "core",      "name": "Core",            "intervals": [{ "ex": "hollow_man", "sets": 5 }, { "ex": "shoulder_taps", "sets": 5 }, { "ex": "superman", "sets": 5 }] },
+    { "id": "core",      "name": "Core",            "intervals": [{ "ex": "hollow_man", "sets": 5 }, { "ex": "shoulder_taps", "sets": 5 }, { "ex": "superman", "sets": 5 }, { "ex": "l_sit", "sets": 5 }] },
     { "id": "pull_dip",  "name": "Pull & Dip",      "intervals": [{ "ex": "pull_ups", "sets": 5 },   { "ex": "bar_dips", "sets": 5 }] },
     { "id": "legs",      "name": "Legs",            "intervals": [{ "ex": "squats", "sets": 5 },     { "ex": "shrimp_squats", "sets": 5 }, { "ex": "tibs", "sets": 3, "rest": 30 }] },
     { "id": "climb",      "name": "Climb",          "intervals": [{ "ex": "climb", "sets": 1 }] },
