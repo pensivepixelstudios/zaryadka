@@ -15,6 +15,14 @@ for k, x in ex.items():
         errs.append(f'exercise "{k}": missing "name"')
     elif x.get("type", "hold") not in ("reps", "hold", "stopwatch"):
         errs.append(f'exercise "{k}": type must be "reps", "hold" or "stopwatch"')
+    elif "levels" in x:
+        L, key = x["levels"], {"reps": "reps", "hold": "work"}.get(x.get("type", "hold"))
+        if not key:
+            errs.append(f'exercise "{k}": a stopwatch exercise has no levels')
+        elif not isinstance(L, list) or not L or not all(type(v) in (int, float) and v > 0 for v in L) or any(a >= b for a, b in zip(L, L[1:])):
+            errs.append(f'exercise "{k}": "levels" must be a non-empty list of increasing positive numbers')
+        elif key in x and x[key] not in L:
+            errs.append(f'exercise "{k}": "levels" must include its starting {key} ({x[key]})')
 ws = c.get("workouts") or []
 if not ws:
     errs.append('"workouts" must be a non-empty array')

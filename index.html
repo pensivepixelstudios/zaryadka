@@ -25,7 +25,7 @@
   .pill { width: 100%; height: 64px; border-radius: 999px; background: var(--work); color: var(--light); font: 700 26px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; }
 
   /* home */
-  #home, #done { max-width: 440px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; gap: 32px;
+  #home, #done, #levels { max-width: 440px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; gap: 32px;
                  padding: calc(env(safe-area-inset-top) + 24px) 24px calc(env(safe-area-inset-bottom) + 24px); }
   header { display: flex; justify-content: space-between; align-items: baseline; }
   .brand { color: var(--work); font: 700 26px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; }
@@ -47,6 +47,8 @@
   .grid i.fut { visibility: hidden; }
   footer { margin-top: auto; display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--mute); }
   footer button:hover, .acts button:hover { color: var(--ink); }
+  .hbtn { font-size: 14px; color: var(--mute); padding: 8px 4px; margin: -8px -4px; }
+  .hbtn:hover { color: var(--ink); }
   #err { white-space: pre-wrap; font-size: 13px; color: var(--work); margin: 0; }
 
   /* run */
@@ -79,6 +81,19 @@
   #abort { font-size: 14px; color: rgba(255,255,255,.55); padding: 10px 8px; margin-top: 4px; }
   #abort.armed { color: #fff; }
 
+  /* levels */
+  #lgroups { display: flex; flex-direction: column; gap: 28px; }
+  .lv { list-style: none; padding: 0; margin: 4px 0 0; }
+  .lv li { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .lv li:last-child { border-bottom: 0; }
+  .lv .name { flex: 1; min-width: 0; }
+  .lv .name em { display: block; font-style: normal; color: var(--mute); font-size: 13px; }
+  .lv .val { min-width: 54px; text-align: center; font: 700 32px/1 var(--display); font-variant-numeric: tabular-nums; }
+  .lv .val small { display: block; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); margin-top: 2px; }
+  .lv .step { flex: none; width: 44px; height: 44px; border-radius: 999px; border: 1.5px solid var(--line); font-size: 22px; line-height: 1; }
+  .lv .step.up { background: var(--work); border-color: var(--work); color: var(--light); }
+  .lv .step:disabled { opacity: .25; cursor: default; }
+
   /* done */
   #done { justify-content: center; }
   #done h1 { font-size: 72px; color: var(--work); }
@@ -102,7 +117,7 @@
 <body>
 
 <main id="home">
-  <header><span class="brand">Zaryadka</span></header>
+  <header><span class="brand">Zaryadka</span><button class="hbtn" id="toLevels" hidden>Levels</button></header>
   <section>
     <div class="tag">Up next</div>
     <h1 id="wname">…</h1>
@@ -150,6 +165,11 @@
     <button id="abort"></button>
   </div>
 </section>
+
+<main id="levels" hidden>
+  <header><span class="brand">Levels</span><button class="hbtn" id="lback">Done</button></header>
+  <div id="lgroups"></div>
+</main>
 
 <main id="done" hidden>
   <div class="tag">Done</div>
@@ -199,6 +219,8 @@ function validate(c) {
   for (const [id, x] of Object.entries(ex)) {
     if (!x || !x.name) e.push(`exercise "${id}": missing "name"`);
     if (x && x.type && !TYPES.includes(x.type)) e.push(`exercise "${id}": type must be ${TYPES.map(t => `"${t}"`).join(', ')}`);
+    if (x && 'levels' in x && !(Array.isArray(x.levels) && x.levels.length && x.levels.every((v, i) => v > 0 && (i === 0 || v > x.levels[i - 1]))))
+      e.push(`exercise "${id}": "levels" must be a non-empty list of increasing positive numbers`);
   }
   if (!Array.isArray(c.workouts) || !c.workouts.length) e.push('"workouts" must be a non-empty array');
   (c.workouts || []).forEach((w, i) => {
@@ -220,8 +242,8 @@ function expand(w) {
     const type = x.type || 'hold';
     out.push({
       id: s.ex, name: x.name, type,
-      reps: s.reps ?? x.reps ?? 10,
-      work: s.work ?? x.work ?? w.work ?? cfg.work ?? 30,
+      reps: s.reps ?? levelled(s.ex, 'reps') ?? x.reps ?? 10,
+      work: s.work ?? levelled(s.ex, 'work') ?? x.work ?? w.work ?? cfg.work ?? 30,
       rest: s.rest ?? x.rest ?? w.rest ?? cfg.rest ?? 30,
     });
   }
@@ -236,6 +258,50 @@ function buildPlan(w) {
     if (i < sets.length - 1 && s.rest > 0) p.push({ type: 'rest', dur: s.rest, ex: sets[i + 1], n: i + 2, of: sets.length });
   });
   return p;
+}
+
+/* ---------- levels ---------- */
+// An exercise with "levels" in workouts.json can be stepped up or down them, per device. The chosen value
+// is stored rather than its position, so editing the list keeps you at the same reps (or the nearest).
+const levels = store.get('levels', {});
+const lvKey = x => ({ reps: 'reps', hold: 'work' })[x.type || 'hold'];  // what a level sets; stopwatches have none
+const ladder = x => lvKey(x) && Array.isArray(x.levels) && x.levels.length ? x.levels : null;
+function levelOf(id) {
+  const x = cfg.exercises[id], L = ladder(x);
+  if (!L) return -1;
+  const want = levels[id] ?? x[lvKey(x)] ?? L[0];
+  return L.reduce((best, v, i) => Math.abs(v - want) < Math.abs(L[best] - want) ? i : best, 0);
+}
+const levelled = (id, key) => { const x = cfg.exercises[id], i = levelOf(id); return i < 0 || lvKey(x) !== key ? undefined : x.levels[i]; };
+function setLevel(id, i) { levels[id] = cfg.exercises[id].levels[i]; store.set('levels', levels); renderLevels(); }
+
+function renderLevels() {
+  // Grouped under the first workout that uses them, in queue order; anything unused goes last.
+  const seen = new Set(), groups = [];
+  const group = (name, ids) => {
+    const fresh = [...new Set(ids)].filter(id => !seen.has(id) && ladder(cfg.exercises[id]));
+    fresh.forEach(id => seen.add(id));
+    if (fresh.length) groups.push([name, fresh]);
+  };
+  cfg.workouts.forEach(w => group(w.name, w.intervals.map(s => typeof s === 'string' ? s : s.ex)));
+  group('Other', Object.keys(cfg.exercises));
+  $('#lgroups').replaceChildren(...groups.map(([name, ids]) => {
+    const sec = el('section'), ul = el('ul', null, 'lv');
+    sec.append(el('div', name, 'tag'), ul);
+    ul.append(...ids.map(id => {
+      const x = cfg.exercises[id], L = x.levels, i = levelOf(id), unit = lvKey(x) === 'reps' ? '' : 's';
+      const li = el('li'), name = el('span', x.name, 'name'), val = el('span', String(L[i]), 'val');
+      name.append(el('em', `Level ${i + 1} of ${L.length} · ` + (i < L.length - 1 ? `next ${L[i + 1]}${unit}` : 'top')));
+      val.append(el('small', unit ? 'sec' : 'reps'));
+      const down = el('button', '\u2212', 'step'), up = el('button', '+', 'step up');
+      down.setAttribute('aria-label', `Level down ${x.name}`); up.setAttribute('aria-label', `Level up ${x.name}`);
+      down.disabled = i === 0; up.disabled = i === L.length - 1;
+      down.onclick = () => setLevel(id, i - 1); up.onclick = () => setLevel(id, i + 1);
+      li.append(name, down, val, up);
+      return li;
+    }));
+    return sec;
+  }));
 }
 
 // Estimated seconds; rep sets are counted as their "work" time.
@@ -273,6 +339,7 @@ async function load() {
 function renderHome() {
   const w = cfg.workouts[pick], sets = expand(w), n = cfg.workouts.length;
   $('#markW').textContent = 'Mark done';
+  $('#toLevels').hidden = !Object.values(cfg.exercises).some(ladder);
   armed = clearTimeout(armed);
   $('#skipW').hidden = n < 2;
   $('#skipW').textContent = `Skip to ${cfg.workouts[(pick + 1) % n].name} →`;
@@ -458,7 +525,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 
 /* ---------- runner ---------- */
 function show(id) {
-  for (const s of ['home', 'run', 'done']) $('#' + s).hidden = s !== id;
+  for (const s of ['home', 'run', 'done', 'levels']) $('#' + s).hidden = s !== id;
   if (id !== 'run') setThemeColor(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim());
 }
 const setThemeColor = c => document.querySelector('meta[name=theme-color]').setAttribute('content', c);
@@ -630,7 +697,7 @@ function nearestCell(ev) {
 
 /* ---------- log import/export ---------- */
 function exportLog() {
-  const blob = new Blob([JSON.stringify({ app: 'zaryadka', exported: new Date().toISOString(), log: store.get('log', []) }, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ app: 'zaryadka', exported: new Date().toISOString(), log: store.get('log', []), levels }, null, 2)], { type: 'application/json' });
   const a = el('a'); a.href = URL.createObjectURL(blob); a.download = `zaryadka-log-${isoDay()}.json`;
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
@@ -642,7 +709,10 @@ async function importLog(file) {
     incoming.forEach(e => e && e.t && e.d && byT.set(e.t, e));
     const merged = [...byT.values()].sort((a, b) => a.t < b.t ? -1 : 1);
     store.set('log', merged);
-    alert(`Imported. ${merged.length} sessions total.`);
+    // Levels travel with the log, so moving to a new device keeps them. The imported file wins.
+    const lv = data.levels && typeof data.levels === 'object' ? Object.entries(data.levels).filter(([, v]) => v > 0) : [];
+    if (lv.length) { Object.assign(levels, Object.fromEntries(lv)); store.set('levels', levels); }
+    alert(`Imported. ${merged.length} sessions total.` + (lv.length ? ' Levels updated.' : ''));
   } catch (e) { alert('Could not import: ' + e.message); }
   cfg ? renderHome() : renderHistory();
 }
@@ -681,6 +751,8 @@ $('#abort').onclick = () => {
   abortArmed = setTimeout(disarmAbort, 4000);
 };
 $('#back').onclick = () => { show('home'); renderHome(); };
+$('#toLevels').onclick = () => { renderLevels(); show('levels'); scrollTo(0, 0); };
+$('#lback').onclick = () => { show('home'); renderHome(); };
 $('#tSound').onclick = () => { settings.sound = !settings.sound; store.set('settings', settings); renderFooter(); };
 $('#tVoice').onclick = () => { settings.voice = !settings.voice; store.set('settings', settings); renderFooter(); };
 $('#tMic').onclick = () => {
@@ -695,6 +767,7 @@ $('#imp').onclick = () => $('#file').click();
 $('#file').onchange = e => { if (e.target.files[0]) importLog(e.target.files[0]); e.target.value = ''; };
 document.addEventListener('keydown', e => {
   if (!$('#sheet').hidden) { if (e.key === 'Escape') closeSheet(); return; }
+  if (!$('#levels').hidden) { if (e.key === 'Escape') $('#lback').click(); return; }
   if (run) {
     const s = run.plan[run.i], reps = s && s.type === 'work' && !s.dur;
     if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (run.paused) pause(false); else if (reps) advance(); else pause(true); }

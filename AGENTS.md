@@ -18,7 +18,8 @@ After any edit, run `python3 tools/check.py` — it validates the file and print
                           // "stopwatch": counts up until the user taps Done (runs, climbs); no reps/work, not in the estimate
       "reps": 10,         // target for "reps" exercises
       "work": 30,         // optional per-exercise hold time / rest override
-      "rest": 30
+      "rest": 30,
+      "levels": [6, 8, 10, 12, 15]  // optional progression the user steps through in the app (see Levels below)
     }
   },
 
@@ -38,7 +39,17 @@ After any edit, run `python3 tools/check.py` — it validates the file and print
 }
 ```
 
-Override precedence (most specific wins): interval → exercise → workout → top-level default.
+Override precedence (most specific wins): interval → level → exercise → workout → top-level default.
+
+## Levels
+Every `reps` and `hold` exercise has `levels`: increasing values of `reps` (or of `work` seconds, for a hold).
+The user steps through them on the Levels screen with − / +, and each device stores the chosen value. Stopwatch
+exercises (runs, climbs) have no levels. `tools/check.py` requires the starting `reps`/`work` to be in the list.
+- Once the user has picked a level, it overrides the exercise's `reps`/`work`. So to make an exercise harder, add
+  or change values in `levels`, not the starting number. A stored value missing from the list snaps to the nearest one.
+- A block that sets its own `reps`/`work` ignores the level.
+- Steps should feel like one notch harder: about +10–25%, smaller steps at low counts (pull-ups 2, 3, 4, 5…).
+  Include a few values below the start so there's room to level down.
 
 ## Guidelines
 - The user wants exercises done **in blocks** (all sets of one exercise, then the next), not alternated.
@@ -54,8 +65,10 @@ Override precedence (most specific wins): interval → exercise → workout → 
 { "app": "zaryadka", "exported": "…", "log": [
   { "d": "2026-09-11", "t": "2026-09-11T07:02:11.000Z", "w": "circuit", "n": "Full Circuit", "of": 10,
     "sets": [ { "ex": "pushups", "reps": 10, "s": 24 }, { "ex": "hollow_man", "hold": 30, "s": 2, "skipped": true } ] }
-] }
+],
+  "levels": { "pushups": 12, "tuck_planche": 8 } }
 ```
+`levels` holds the value the user picked for each exercise they've changed, which the app also restores on import.
 `s` is the number of seconds the set took (for a stopwatch set, which has no `reps`/`hold`, that is the whole activity, pauses excluded). For rep sets this tells you how fast the user got through the target, which helps when deciding whether to raise `reps`.
 `of` is the number of sets planned. Sets marked `"skipped": true` weren't done, and a session ended early lists only the sets reached, so completion = non-skipped sets ÷ `of`. Entries without `of` are complete sessions saved before this was tracked.
 `"manual": true` marks a workout that wasn't run: ticked off with "Mark done", or logged by tapping a day in the history grid. Every set is recorded as done with `s: 0`.

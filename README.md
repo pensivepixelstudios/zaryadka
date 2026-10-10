@@ -7,6 +7,7 @@ A minimalist 10-minute calisthenics coach. It's a single static page with no bui
 - Beeps, optional voice announcements ("Rest. Next, push-ups"), and it keeps the screen awake during a session
 - Turn on **Mic “done”** and say *done* to finish a rep set without touching the phone. It's the only command, and it only listens during a session
 - History is stored on the device, shown as a small calendar grid, and can be exported or imported as a JSON file
+- **Levels** (top right) lists every exercise with − / + to step its reps or hold time down or up a level. Levels are stored per device and included in the exported log
 - Tap any day in the grid to log a workout you did away from the app, or to remove one logged by mistake
 - Works offline and installs to the home screen
 
