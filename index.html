@@ -45,8 +45,9 @@
   .grid i.l4 { background: var(--work); }
   .grid i.today { outline: 1.5px solid var(--ink); outline-offset: -1.5px; }
   .grid i.fut { visibility: hidden; }
-  footer { margin-top: auto; display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--mute); }
-  footer button:hover, .acts button:hover { color: var(--ink); }
+  footer { margin-top: auto; display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--mute); }
+  footer .lvbtn { margin-left: auto; color: var(--work); font: 700 20px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; }
+  footer button:not(.lvbtn):hover, .acts button:hover { color: var(--ink); }
   .hbtn { font-size: 14px; color: var(--mute); padding: 8px 4px; margin: -8px -4px; }
   .hbtn:hover { color: var(--ink); }
   #err { white-space: pre-wrap; font-size: 13px; color: var(--work); margin: 0; }
@@ -117,7 +118,7 @@
 <body>
 
 <main id="home">
-  <header><span class="brand">Zaryadka</span><button class="hbtn" id="toLevels" hidden>Levels</button></header>
+  <header><span class="brand">Zaryadka</span></header>
   <section>
     <div class="tag">Up next</div>
     <h1 id="wname">…</h1>
@@ -135,10 +136,9 @@
   </section>
   <footer>
     <button id="tSound"></button>
-    <button id="tVoice"></button>
-    <button id="tMic"></button>
-    <button id="exp">Export log</button>
-    <button id="imp">Import log</button>
+    <button id="imp">Import</button>
+    <button id="exp">Export</button>
+    <button class="lvbtn" id="toLevels" hidden>Levels</button>
     <input type="file" id="file" accept="application/json,.json" hidden>
   </footer>
 </main>
@@ -198,7 +198,7 @@ const store = {
 };
 // One-time copy of data saved under the app's old name. Storage keys stay fixed even if "name" in workouts.json changes.
 try { for (const k of ['log', 'next', 'settings']) { const old = localStorage.getItem('ten.' + k); if (old != null && localStorage.getItem('boris.' + k) == null) localStorage.setItem('boris.' + k, old); } } catch {}
-const settings = Object.assign({ sound: true, voice: true, mic: false }, store.get('settings', {}));
+const settings = Object.assign({ sound: true }, store.get('settings', {}));
 const pad = n => String(n).padStart(2, '0');
 const isoDay = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
@@ -394,9 +394,6 @@ function renderHistory() {
 
 function renderFooter() {
   $('#tSound').textContent = `Sound ${settings.sound ? 'on' : 'off'}`;
-  $('#tVoice').textContent = `Voice ${settings.voice ? 'on' : 'off'}`;
-  $('#tMic').hidden = !SR;
-  $('#tMic').textContent = `Mic “done” ${settings.mic ? 'on' : 'off'}`;
 }
 
 /* ---------- sound ---------- */
@@ -423,95 +420,14 @@ const sfx = {
   done: () => { tone(523, .18); tone(659, .18, .18); tone(784, .7, .36); },
 };
 function say(text, delay = 0) {
-  if (!settings.voice || !('speechSynthesis' in window)) return;
+  if (!settings.sound || !('speechSynthesis' in window)) return;
   setTimeout(() => {
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text); u.rate = 1.05;
-      u.onend = u.onerror = () => kick();  // speaking can end the recognition session
       speechSynthesis.speak(u);
     } catch {}
   }, delay);
-}
-
-/* ---------- “done” by voice ---------- */
-// The only command. It listens during a session and taps the Done button for you.
-// A recognition session is disposable: browsers end it after a silence, after every utterance, when a
-// spoken announcement or a beep takes the audio, or for no reason at all — Chrome on Android does all
-// of these. So nothing relies on one lasting: a new session starts the instant the old one ends, and a
-// watchdog covers the cases where no "end" ever arrives. The gap between sessions is deaf time, so it
-// is kept as short as the browser allows, backing off only when a session dies on startup.
-const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-// "Done" counts anywhere in the phrase ("ok done", "I'm done"). Its usual mishearings only count as the
-// whole utterance, so counting reps out loud — "up, down, up, down" — doesn't end the set.
-const DONE = /\bdone\b/i, LIKE_DONE = /^\W*(dun|don|dawn|down|doan|dune)\W*$/i;
-const isDone = t => DONE.test(t) || LIKE_DONE.test(t);
-let rec = null, recOn = false, recLive = false, heardAt = -Infinity;
-let kickT = null, watch = null, liveSince = 0, fails = 0, cut = false;
-
-function recognizer() {
-  if (rec || !SR) return rec;
-  rec = new SR();
-  rec.continuous = true; rec.interimResults = true; rec.lang = 'en-US';
-  rec.maxAlternatives = 4;  // "done" is short, so it often lands below the top guess
-  rec.onstart = () => { recLive = true; liveSince = performance.now(); };
-  rec.onend = () => {
-    // A session that dies as soon as it starts means something is wrong; anything else is normal churn.
-    fails = cut || performance.now() - liveSince > 400 ? 0 : Math.min(fails + 1, 5);
-    cut = false; recLive = false; kick();
-  };
-  rec.onresult = e => {
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const alts = e.results[i];
-      for (let k = 0; k < alts.length; k++) if (isDone(alts[k].transcript)) { fails = 0; return heardDone(); }
-    }
-  };
-  rec.onerror = e => {
-    recLive = false;
-    if (['not-allowed', 'service-not-allowed'].includes(e.error)) micOff();  // no permission; everything else is churn
-  };
-  return rec;
-}
-
-function heardDone() {
-  const s = run && run.plan[run.i], now = performance.now();
-  if (!s || run.paused || s.type !== 'work' || s.dur || now - heardAt < 1500) return;
-  heardAt = now;
-  cut = true;
-  try { rec.abort(); } catch {}  // clears the transcript so the same "done" can't fire twice
-  advance();
-}
-
-function kick() {  // make sure a session is running
-  if (!recOn || recLive || kickT) return;
-  kickT = setTimeout(() => {
-    kickT = null;
-    if (!recOn || recLive) return;
-    try { rec.start(); } catch {}
-  }, fails * 400);
-}
-
-function listen(on) {
-  recOn = !!(on && settings.mic && SR);
-  const r = recognizer(); if (!r) return;
-  clearInterval(watch); watch = null;
-  clearTimeout(kickT); kickT = null;
-  if (recOn) { fails = 0; watch = setInterval(kick, 600); kick(); }
-  else { recLive = false; cut = true; try { r.abort(); } catch {} }
-}
-
-function micOff() {
-  recOn = recLive = false; clearInterval(watch); watch = null; clearTimeout(kickT); kickT = null;
-  settings.mic = false; store.set('settings', settings);
-  renderFooter(); $('#tMic').textContent = 'Mic blocked'; setTimeout(renderFooter, 2500);
-}
-
-// Ask for the microphone at the tap, rather than in the middle of a workout.
-function askMic() {
-  const r = recognizer(); if (!r) return;
-  recOn = false;
-  try { r.start(); } catch { return; }
-  setTimeout(() => { if (!recOn) { cut = true; try { r.abort(); } catch {} } }, 1200);
 }
 
 let lock = null;
@@ -521,7 +437,7 @@ async function wake(on) {
     else if (!on && lock) { await lock.release(); lock = null; }
   } catch {}
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && run) { wake(true); kick(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && run) wake(true); });
 
 /* ---------- runner ---------- */
 function show(id) {
@@ -535,7 +451,7 @@ function start() {
   const w = cfg.workouts[pick];
   run = { w, plan: buildPlan(w), i: -1, paused: false, log: [], end: null };
   $('#prog').replaceChildren(...run.plan.filter(p => p.type === 'work').map(() => el('i')));
-  show('run'); wake(true); listen(true);
+  show('run'); wake(true);
   advance();
   run.timer = setInterval(tick, 100);
 }
@@ -573,7 +489,7 @@ function paint(s) {
   $('#count').textContent = `${completed + (s.type === 'work' ? 1 : 0)} / ${s.of}`; // matches the lit segments
   if (reps && !sw) { $('#timer').textContent = s.ex.reps; $('#unit').textContent = ''; }
   if (sw) $('#unit').textContent = '';
-  $('#next').textContent = s.type === 'prep' ? amount(s.ex) : reps && recOn ? '… or say “done”' : '';
+  $('#next').textContent = s.type === 'prep' ? amount(s.ex) : '';
 }
 
 function tick() {
@@ -601,12 +517,11 @@ function pause(on) {
   if (on) { run.pausedAt = now; try { speechSynthesis.cancel(); } catch {} }
   else { const d = now - run.pausedAt; run.began += d; if (run.end) run.end += d; }
   run.paused = on;
-  listen(!on);
   disarmAbort();
   $('#pause').hidden = !on;
 }
 
-function stop() { clearInterval(run.timer); run = null; wake(false); listen(false); $('#pause').hidden = true; try { speechSynthesis.cancel(); } catch {} }
+function stop() { clearInterval(run.timer); run = null; wake(false); $('#pause').hidden = true; try { speechSynthesis.cancel(); } catch {} }
 
 // Saves a session on the day of "when". Skipped sets are marked; sets never reached (ended early) aren't listed.
 function logSession(w, of, sets, extra, when = new Date()) {
@@ -754,11 +669,6 @@ $('#back').onclick = () => { show('home'); renderHome(); };
 $('#toLevels').onclick = () => { renderLevels(); show('levels'); scrollTo(0, 0); };
 $('#lback').onclick = () => { show('home'); renderHome(); };
 $('#tSound').onclick = () => { settings.sound = !settings.sound; store.set('settings', settings); renderFooter(); };
-$('#tVoice').onclick = () => { settings.voice = !settings.voice; store.set('settings', settings); renderFooter(); };
-$('#tMic').onclick = () => {
-  settings.mic = !settings.mic; store.set('settings', settings); renderFooter();
-  if (!settings.mic) listen(false); else if (run) listen(true); else askMic();
-};
 $('#grid').onclick = e => { const c = nearestCell(e); if (c) openSheet(c.dataset.d); };
 $('#sheet').onclick = e => { if (e.target === $('#sheet')) closeSheet(); };
 $('#sclose').onclick = closeSheet;

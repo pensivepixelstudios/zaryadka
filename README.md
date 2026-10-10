@@ -4,10 +4,9 @@ A minimalist 10-minute calisthenics coach. It's a single static page with no bui
 
 - Queues the workouts in [`workouts.json`](data/workouts.json) in order. Hit **Start**, or **Skip** to move to the next one
 - **Rep sets** show a target and a big *Done* button. **Hold sets** and **rest** are timed, with a 3-2-1 beep countdown
-- Beeps, optional voice announcements ("Rest. Next, push-ups"), and it keeps the screen awake during a session
-- Turn on **Mic “done”** and say *done* to finish a rep set without touching the phone. It's the only command, and it only listens during a session
+- Beeps and spoken announcements ("Rest. Next, push-ups"), both switched by **Sound**, and it keeps the screen awake during a session
 - History is stored on the device, shown as a small calendar grid, and can be exported or imported as a JSON file
-- **Levels** (top right) lists every exercise with − / + to step its reps or hold time down or up a level. Levels are stored per device and included in the exported log
+- **Levels** (bottom right) lists every exercise with − / + to step its reps or hold time down or up a level. Levels are stored per device and included in the exported log
 - Tap any day in the grid to log a workout you did away from the app, or to remove one logged by mistake
 - Works offline and installs to the home screen
 
@@ -41,4 +40,4 @@ Free GitHub Pages needs a public repo. Nothing personal is in it, since your his
 - **Laptop (Chrome/Edge):** use the install icon in the address bar, or just keep a tab open.
 
 ## Tracking and sync
-Each device keeps its own log in browser storage. Use **Export log** to save a JSON file (to Downloads, Drive, and so on) and **Import log** to merge one in, for example to move history from your phone to your laptop. Imports are de-duplicated.
+Each device keeps its own log in browser storage. Use **Export** to save a JSON file (to Downloads, Drive, and so on) and **Import** to merge one in, for example to move history from your phone to your laptop. Imports are de-duplicated.

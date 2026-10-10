@@ -60,7 +60,7 @@ exercises (runs, climbs) have no levels. `tools/check.py` requires the starting 
 - The app name lives in `index.html` and `manifest.webmanifest`, not here.
 - Only `data/workouts.json` needs to change to add exercises or workouts. Commit and push; GitHub Pages redeploys in about a minute.
 
-## Workout log format (exported by the app, "Export log")
+## Workout log format (exported by the app, "Export")
 ```json
 { "app": "zaryadka", "exported": "…", "log": [
   { "d": "2026-09-11", "t": "2026-09-11T07:02:11.000Z", "w": "circuit", "n": "Full Circuit", "of": 10,
