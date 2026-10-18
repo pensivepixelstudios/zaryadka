@@ -561,6 +561,14 @@ function finish() {
   $('#dmeta').textContent = n === 0 ? `All ${e.of} sets skipped · not counted`
     : took + (n < e.of ? `${n} of ${e.of} sets` : `${e.of} set${e.of > 1 ? 's' : ''}`) + ` · session ${counted(log).length}` + (s > 1 ? ` · ${s}-day streak` : '');
   show('done');
+  fit($('#dname'));
+}
+
+// Shrink a heading until its longest word fits the width (a long name like "Handstand" on a narrow phone).
+function fit(el, max = 72, min = 32) {
+  let px = max;
+  el.style.fontSize = px + 'px';
+  while (el.scrollWidth > el.clientWidth && px > min) el.style.fontSize = --px + 'px';
 }
 
 /* ---------- day sheet ---------- */
