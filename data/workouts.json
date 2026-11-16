@@ -17,7 +17,8 @@
     "run":           { "name": "Run",           "type": "stopwatch" },
     "tibs":          { "name": "Tibs",          "type": "reps", "reps": 15,  "levels": [10, 15, 20, 25, 30, 40] },
     "l_sit":         { "name": "L-Sit",         "type": "hold", "work": 10, "rest": 30, "levels": [5, 10, 15, 20, 25, 30] },
-    "handstand":     { "name": "Handstand",     "type": "hold", "work": 10, "rest": 10, "levels": [5, 8, 10, 12, 15, 20, 25, 30] }
+    "handstand":     { "name": "Handstand",     "type": "hold", "work": 10, "rest": 10, "levels": [5, 8, 10, 12, 15, 20, 25, 30] },
+    "hang":          { "name": "Hang",          "type": "hold", "work": 20,  "levels": [10, 15, 20, 25, 30, 40, 45, 60] }
   },
 
   "workouts": [
@@ -26,6 +27,7 @@
     { "id": "pull_dip",  "name": "Pull & Dip",      "intervals": [{ "ex": "pull_ups", "sets": 5 },   { "ex": "bar_dips", "sets": 5 }] },
     { "id": "legs",      "name": "Legs",            "intervals": [{ "ex": "squats", "sets": 5 },     { "ex": "shrimp_squats", "sets": 5 }, { "ex": "tibs", "sets": 3, "rest": 30 }] },
     { "id": "handstand", "name": "Handstand",       "intervals": [{ "ex": "handstand", "sets": 5 }] },
+    { "id": "hang",      "name": "Hang",            "intervals": [{ "ex": "pull_ups", "sets": 5 },   { "ex": "hang", "sets": 5 }] },
     { "id": "climb",      "name": "Climb",          "intervals": [{ "ex": "climb", "sets": 1 }] },
     { "id": "run",        "name": "Run",            "intervals": [{ "ex": "run", "sets": 1 }] }
   ]
